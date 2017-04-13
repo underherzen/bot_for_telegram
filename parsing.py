@@ -10,18 +10,31 @@ def GetImage(page, table):
     <style>
 
   table{
-    margin: 50px 0;
+
     text-align: left;
     border-collapse: separate;
     border: 1px solid #ddd;
     border-spacing: 10px;
     border-radius: 3px;
     background: #fdfdfd;
-    font-size: 14px;
+    font-size: 18px;
     width: 100%;
 
   }
+
   table:nth-child(2) {
+    display:none;
+    }
+  h1 {
+    display:none!important;
+    opacity:0!important;
+    position:absolute!important;
+  }
+
+
+
+  table:nth-child(4) {
+
     display:none;
     opacity:0;
     position:absolute;
@@ -38,9 +51,10 @@ def GetImage(page, table):
     background: #E4E4E4;
     font-size: 14px;
     width: 90px;
+    max-width: 80px!important;
   }
   caption{
-    font-style: italic;
+
     text-align: right;
     color: #547901;
   }
@@ -67,13 +81,12 @@ td {
   transition: .3s linear;
   text-align: center;
 }
-tr:hover td{
-  color: #6699ff;
-}
+
 		</style>'''
     page = style2 + table + page + '</table>'
     options = {
-    'format': 'jpg',
+    'format': 'png',
+    'quality': 100,
     'encoding': "UTF-8",
     'cookie': [
         ('cookie-name1', 'cookie-value1'),
@@ -108,6 +121,8 @@ def get_day(word):
         return "Friday"
     if(word.find("Суббота")>-1):
         return "Saturday"
+    if(word.find("Воскресенье")>-1):
+        return "Sunday"
     return a
 
 
@@ -117,16 +132,9 @@ def return_word(word):
     return word
 
 def get_raspisanie_na_den(day, message_id):
-    mas_of_days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-    mas_of_days_rus = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота']
-    url = 'https://guide.herzen.spb.ru/static/schedule.php'
-    main_domain = 'https://guide.herzen.spb.ru'
-    html_doc = urllib.request.urlopen(url).read()
-    soup = BeautifulSoup(html_doc)
-    mas = []
-
+    count = 0
     print(day)
-    ivt = 'бакалавриат, 3 курс, группа ИВТ '
+
     i = 0
     conn = sqlite3.connect('faks.db')
     c = conn.cursor()
@@ -135,58 +143,55 @@ def get_raspisanie_na_den(day, message_id):
     inst = list(inst)
     inst = inst[0]
     print(str(inst))
-    url_of_rasp = ''
-    soup = str(soup)
     day = day.lower()
-    soup = soup.lower()
-    inst_starts = soup.find(inst)
-    print(inst_starts)
-    soup = soup[inst_starts:len(soup)]
-    soup = BeautifulSoup(soup)
+
+
+
+
     #print(soup)
     c.execute('SELECT fakultet FROM users WHERE message_id = ? ',(message_id,))
     ivt = c.fetchone()
     ivt = list(ivt)
     ivt = ivt[0]
+    print(ivt)
     checkingGroup = 0
-    for link in soup.findAll('li'):
-        i += 1
-        link2 = str(link)
-        #print(link2)
-        ivt2 = link2.find(ivt)
-        if( (ivt2>-1) and (checkingGroup == 0)):
-            checkingGroup = 1
-           # print(link2)
-           # print(i)
-            posOfLink = link2.find('/static/schedule_view')
-            lenofhref = link2.find("', '_blank'")
-            href = link2[posOfLink:lenofhref]
-            print(href)
-            href = href.replace('amp;','',-1)
-            url_of_rasp = main_domain + href
-    count = 0
-    print(url_of_rasp)
-    page = urllib.request.urlopen(url_of_rasp).read()
-    page = BeautifulSoup(page)
-    page = str(page)
-    #page = get_podgrup(page)
-    zachet = page.find('Зачеты')
-    page = page[0:zachet]
+    page = ''
+    c.execute("SELECT * FROM db WHERE fakultet = ? ", (inst,))
+    boolean = True
+    while(boolean):
+        row = c.fetchone()
+        #print(row)
+
+        stroka = row[1].lower()
+
+        #print(row[1])
+
+        #print(type(row[1]))
+        if(stroka.find(ivt)>-1):
+            page = row[2]
+            #print(page)
+            boolean = False
     #page = str(page)
     #page = re.sub(r'(\<(/?[^>]+)>)', '', page)
     check = 0
     #print(page)
-    for day_of_week in mas_of_days_rus:
-        #print(mas_of_days_rus)
-        #print(mas_of_days)
-        count+=1
-        if(page.find(day_of_week)<0):
-            if(day == mas_of_days[count-1]):
-                check = 1
-            #print(day_of_week)
-            mas_of_days_rus.pop(count-1)
-            mas_of_days.pop(count-1)
-    if(check == 1): day = mas_of_days[0]
+    mas_of_days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    mas_of_days_rus = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота']
+    mas_of_days_rus2 = mas_of_days_rus
+    print(mas_of_days_rus)
+    count_kek = 0
+    count_sek = 0
+    for count in range(6):
+        print(count)
+        count_sek = count + count_kek
+        if(page.find(mas_of_days_rus[count_sek])<0):
+            mas_of_days_rus.pop(count_sek)
+            mas_of_days.pop(count_sek)
+            count_kek -=1
+
+
+    print(mas_of_days_rus)
+
     Table_starts = page.find('<table')
     print(mas_of_days)
     Table_ends = page.find(mas_of_days_rus[0])
@@ -225,9 +230,51 @@ def get_raspisanie_na_den(day, message_id):
 
     print(mas_of_days)
 
-    return page
+    return 'Выходной'
 
 
+def database():
+    conn = sqlite3.connect('faks.db')
+    c = conn.cursor()
+    url = 'https://guide.herzen.spb.ru/static/schedule.php'
+    main_domain = 'https://guide.herzen.spb.ru'
+    mas = []
+    html_doc = urllib.request.urlopen(url).read()
+    soup = BeautifulSoup(html_doc)
+    for link in soup.findAll('h3'):
+        print(link.get_text())
+        mas.append(link.get_text())
+    mas.pop(0)
+    for var in range(len(mas)-1):
+        print(mas[var])
+
+        page2 = str(soup)
+        page_starts = page2.find(mas[var])
+        page_ends = page2.find(mas[var+1])
+        page2 = page2[page_starts:page_ends]
+        page2 = BeautifulSoup(page2)
+        for link in page2.findAll('li'):
+            link2 = str(link)
+            print(link.get_text())
+            group = link.get_text()
+            link2 = str(link2)
+            posOfLink = link2.find('/static/schedule_view')
+            lenofhref = link2.find("', '_blank'")
+            href = link2[posOfLink:lenofhref]
+            print(href)
+            href = href.replace('amp;','',-1)
+            url_of_rasp = main_domain + href
+            page = urllib.request.urlopen(url_of_rasp).read()
+            page = BeautifulSoup(page)
+            page = str(page)
+            #page = get_podgrup(page)
+            zachet = page.find('Зачеты')
+            page = page[0:zachet]
+            c.execute("INSERT INTO `db` values (?,?,?)", (mas[var], group, page))
+            conn.commit()
+    c.close()
+    conn.close()
+    print(mas)
 
 
 
