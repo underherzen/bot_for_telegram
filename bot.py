@@ -36,8 +36,8 @@ def show_info(message):
 @bot.message_handler(content_types=["text"])
 def handle_text_doc(message):
     #parsing.chat_id(message.chat.id)
-    mas_of_days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-    mas_of_days_rus = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота']
+    mas_of_days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    mas_of_days_rus = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье']
     word = message.text
     check = 0
     for day in mas_of_days_rus:
@@ -48,21 +48,25 @@ def handle_text_doc(message):
     if(check == 1):
         dayofweek = parsing.get_day(word)
         dayofweek = dayofweek.lower()
-        print(dayofweek)
+
         try:
             raspisanie = parsing.get_raspisanie_na_den(dayofweek, message.chat.id)
-            bot.send_photo(message.chat.id, raspisanie)
-        except ValueError:
-            bot.send_message(message.chat.id, 'Произошла ошибочка. Удотовертесь в том, что факультет\институт и Ваша группа соответствуют друг другу')
+
+            if(raspisanie == 'Выходной'):
+                bot.send_message(message.chat.id, "Выходной")
+            else:
+                bot.send_photo(message.chat.id, raspisanie)
+        except TypeError:
+            bot.send_message(message.chat.id, 'Произошла ошибочка. Удоcтовертесь в том, что факультет\институт и Ваша группа соответствуют друг другу')
             bot.send_message(message.chat.id, 'Выполните /show, чтобы посмотреть Вашу группу и институт\факультет')
     else:
        # working_in_db.isExist(chat_id, word)
         word = word.lower()
         check = working_in_db.isExist(message.chat.id, word)
-        print(check)
+
         if(len(check)>0):
             bot.send_message(message.chat.id, check)
-    print(message.chat.id)
+
 
 
 

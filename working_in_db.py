@@ -1,21 +1,6 @@
 
 import sqlite3
 
-def add_update(message_id, word):
-    conn = sqlite3.connect('faks.db')
-    c = conn.cursor()
-    c.execute('''SELECT * FROM users WHERE message_id = message_id ''')
-    data = c.fetchone()
-    if(data):
-        c.execute('''
-        UPDATE users
-        SET fakultet = word
-        WHERE message_id = message_id
-      ''')
-    else:
-       c.execute('''INSERT INTO users (message_id,fakultet) VALUES (message_id,word)''')
-    c.close()
-    conn.close()
 def show_info(message_id):
     conn = sqlite3.connect('faks.db')
     c = conn.cursor()
@@ -38,7 +23,7 @@ def getall():
 
     c.close()
     conn.close()
-getall()
+
 
 def isExist(message_id, text1):
     print(text1)
@@ -77,3 +62,12 @@ def isExist(message_id, text1):
     return ''
     c.close()
     conn.close()
+def addtable():
+    conn = sqlite3.connect('faks.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE db
+             (fakultet text, groups text, page text)''')
+    conn.commit()
+    conn.close()
+    c.close()
+
